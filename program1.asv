@@ -341,17 +341,15 @@ grid on;
 xlabel('czas'); 
 ylabel('u');
 title('λ=4');
-legend('D=30', 'D=50','D=69');
-print ('pics/DMC_u3vD.png', '-dpng', '-r400')
+% print ('pics/DMC_ul4.png', '-dpng', '-r400')
 hold off; 
 
 figure('Position', [100, 100, 600, 250]);
-stairs(yzad, ':');hold on;stairs(y,'r'); hold on;stairs(y1,'b');stairs(y2, 'g');
+stairs(y,'r'); hold on; stairs(yzad, ':'); hold on;stairs(y1,'b');stairs(y2, 'g');
 hold on; 
 grid on;
 xlabel('czas'); 
 ylabel('y, y_{zad}');
 title('λ=4');
-legend('yzad','D=30', 'D=50','D=69');
-print ('pics/DMC_y3vD.png', '-dpng', '-r400')
+% print ('pics/DMC_yl4.png', '-dpng', '-r400')
 
