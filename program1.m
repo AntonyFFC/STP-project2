@@ -169,10 +169,10 @@ yzad = ones(1, kk);
 u = zeros(1, kk);
 y = zeros(1, kk);
 e = zeros(1, kk);
-lambda = 1;
-D = 30;
-N = 30;
-Nu = 30;
+lambda = 4;
+D = 69;
+N = 15;
+Nu = 1;
 % D = 69;
 % N = 15;
 % Nu = 1;
@@ -228,9 +228,9 @@ end
 u1 = zeros(1, kk);
 y1 = zeros(1, kk);
 e = zeros(1, kk);
-D = 50;
-N = 50;
-Nu = 50;
+D = 69;
+N = 15;
+Nu = 2;
 s = step(G_z);
 s(1) = [];
 dup = zeros(1,D-1);
@@ -283,8 +283,8 @@ u2 = zeros(1, kk);
 y2 = zeros(1, kk);
 e = zeros(1, kk);
 D = 69;
-N = 69;
-Nu = 69;
+N = 15;
+Nu = 3;
 s = step(G_z);
 s(1) = [];
 dup = zeros(1,D-1);
@@ -340,9 +340,9 @@ hold on;
 grid on;
 xlabel('czas'); 
 ylabel('u');
-title('λ=4');
-legend('D=30', 'D=50','D=69');
-print ('pics/DMC_u3vD.png', '-dpng', '-r400')
+title('u');
+legend('Nu=1', 'Nu=2','Nu=3');
+print ('pics/DMC_u3vNu.png', '-dpng', '-r400')
 hold off; 
 
 figure('Position', [100, 100, 600, 250]);
@@ -351,7 +351,7 @@ hold on;
 grid on;
 xlabel('czas'); 
 ylabel('y, y_{zad}');
-title('λ=4');
-legend('yzad','D=30', 'D=50','D=69');
-print ('pics/DMC_y3vD.png', '-dpng', '-r400')
+title('y');
+legend('yzad','Nu=1', 'Nu=2','Nu=3');
+print ('pics/DMC_y3vNu.png', '-dpng', '-r400')
 

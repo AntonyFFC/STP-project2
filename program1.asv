@@ -170,9 +170,9 @@ u = zeros(1, kk);
 y = zeros(1, kk);
 e = zeros(1, kk);
 lambda = 1;
-D = 30;
-N = 30;
-Nu = 30;
+D = 69;
+N = 15;
+Nu = 1;
 % D = 69;
 % N = 15;
 % Nu = 1;
@@ -228,9 +228,9 @@ end
 u1 = zeros(1, kk);
 y1 = zeros(1, kk);
 e = zeros(1, kk);
-D = 50;
-N = 50;
-Nu = 50;
+D = 69;
+N = 15;
+Nu = 15;
 s = step(G_z);
 s(1) = [];
 dup = zeros(1,D-1);
@@ -283,8 +283,8 @@ u2 = zeros(1, kk);
 y2 = zeros(1, kk);
 e = zeros(1, kk);
 D = 69;
-N = 69;
-Nu = 69;
+N = 17;
+Nu = 17;
 s = step(G_z);
 s(1) = [];
 dup = zeros(1,D-1);
@@ -340,16 +340,18 @@ hold on;
 grid on;
 xlabel('czas'); 
 ylabel('u');
-title('λ=4');
-% print ('pics/DMC_ul4.png', '-dpng', '-r400')
+title('u');
+legend('N=13', 'N=15','N=17');
+print ('pics/DMC_u3vN.png', '-dpng', '-r400')
 hold off; 
 
 figure('Position', [100, 100, 600, 250]);
-stairs(y,'r'); hold on; stairs(yzad, ':'); hold on;stairs(y1,'b');stairs(y2, 'g');
+stairs(yzad, ':');hold on;stairs(y,'r'); hold on;stairs(y1,'b');stairs(y2, 'g');
 hold on; 
 grid on;
 xlabel('czas'); 
 ylabel('y, y_{zad}');
-title('λ=4');
-% print ('pics/DMC_yl4.png', '-dpng', '-r400')
+title('y');
+legend('yzad','N=13', 'N=15','N=17');
+print ('pics/DMC_y3vN.png', '-dpng', '-r400')
 
