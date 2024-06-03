@@ -1,19 +1,27 @@
 % Punkt 1
 clear all;
 K0 = 6.4;
-T0 = 5.0;
+T0 = 5;
 T1 = 2.07;
 T2 = 4.6;
 Tp = 0.5;
 
+K0 = 0.03 * K0;
+T0 = 2 * T0;
+
 s = tf('s');
 G_s = (K0 * exp(-T0 * s)) / ((T1 * s + 1) * (T2 * s + 1));
 disp('Transmitancja ciągła G(s):');
-disp(G_s);
+G_s
+G_sConst = (6.4 * exp(-5 * s)) / ((T1 * s + 1) * (T2 * s + 1));
+G_zConst = c2d(G_sConst, Tp, 'zoh');
 
 G_z = c2d(G_s, Tp, 'zoh');
 disp('Transmitancja dyskretna G(z):');
-disp(G_z);
+G_z
+
+opozn = G_z.OutputDelay;
+opozn
 
 % Porównanie odpowiedzi skokowej transmitancji ciągłej i dyskretnej
 t_cont = 0:0.1:100;  % Czas dla odpowiedzi ciągłej
@@ -113,17 +121,10 @@ fprintf('r2 = %.4f\n', r2);
 % Punkt 4
 % PID ciagly
 PID = K_r + K_i/s + K_d*s;
-
-% Closed-loop transfer function
 G_cl = feedback(PID * G_s, 1);
-
-% Simulation time
 t = 0:0.1:200;
-
-% Step response
 [y1, t] = step(G_cl, t);
 
-% Plot the step response
 % figure;
 % plot(t, y1);
 % title('PID ciągły');
@@ -133,20 +134,19 @@ t = 0:0.1:200;
 % grid on;
 
 % PID dyskretny
+% Współczynniki obiektu
+c = [num(2), num(3)];
+b = [den(1), den(2), den(3)];
 
-kk = 200; % koniec symulacji
+kk = 500; % koniec symulacji
 u = zeros(1, kk); % sygnał sterujący
 y = zeros(1, kk); % sygnał wyjściowy
 yzad = ones(1, kk); % sygnał zadany
 e = zeros(1, kk); % uchyb regulacji
 
-% Współczynniki obiektu
-c = [num(2), num(3)];
-b = [den(1), den(2), den(3)];
-
-for k = 13:kk
+for k = (3+opozn):kk
     % Symulacja obiektu
-    y(k) = c(1)*u(k-11) + c(2)*u(k-12) - b(2)*y(k-1) - b(3)*y(k-2);
+    y(k) = c(1)*u(k-1-opozn) + c(2)*u(k-2-opozn) - b(2)*y(k-1) - b(3)*y(k-2);
     
     % Uchyb regulacji
     e(k) = yzad(k) - y(k);
@@ -160,11 +160,11 @@ end
 % title('u'); xlabel('k');
 % figure; stairs(y); hold on; stairs(yzad, ':');
 % title('PID dyskretny'); xlabel('k');
-% print ('pics/pid_dysk.png', '-dpng', '-r400')
+% % print ('pics/pid_dysk.png', '-dpng', '-r400')
 % hold off;
 
 % DMC
-kk = 100;
+kk = 2000;
 yzad = ones(1, kk);
 u = zeros(1, kk);
 y = zeros(1, kk);
@@ -173,10 +173,7 @@ lambda = 4;
 D = 69;
 N = 15;
 Nu = 1;
-% D = 69;
-% N = 15;
-% Nu = 1;
-s = step(G_z);
+s = step(G_zConst);
 s(1) = [];
 dup = zeros(1,D-1);
 
@@ -207,9 +204,9 @@ K = inv((M' * M + lambda * I)) * M';
 Ku = K(1,:) * Mp;
 Ke = sum(K(1,:));
 
-for k = 13:kk
+for k = (3+opozn):kk
     % Symulacja obiektu
-    y(k) = c(1) * u(k-11) + c(2) * u(k-12) - b(2) * y(k-1) - b(3) * y(k-2);
+    y(k) = c(1)*u(k-1-opozn) + c(2)*u(k-2-opozn) - b(2)*y(k-1) - b(3)*y(k-2);
 
     % Uchyb regulacji
     e(k) = yzad(k) - y(k);
@@ -224,134 +221,137 @@ for k = 13:kk
     u(k) = u(k-1) + dup(1);
 end
 
-
-u1 = zeros(1, kk);
-y1 = zeros(1, kk);
-e = zeros(1, kk);
-D = 69;
-N = 15;
-Nu = 2;
-s = step(G_z);
-s(1) = [];
-dup = zeros(1,D-1);
-
-% Macierz M
-M = zeros(N, Nu);
-for i = 1:N
-    for j = 1:Nu
-        if (i >= j)
-            M(i, j) = s(i-j+1);
-        end
-    end
-end
-
-% Macierz Mp
-Mp = zeros(N, D-1);
-for i = 1:N
-    for j = 1:(D-1)
-        if j + i <= D
-            Mp(i, j) = s(i+j) - s(j);
-        else
-            Mp(i, j) = s(D) - s(j);
-        end
-    end
-end
-
-I = eye(Nu);
-K = inv((M' * M + lambda * I)) * M';
-Ku = K(1,:) * Mp;
-Ke = sum(K(1,:));
-
-for k = 13:kk
-    % Symulacja obiektu
-    y1(k) = c(1) * u1(k-11) + c(2) * u1(k-12) - b(2) * y1(k-1) - b(3) * y1(k-2);
-
-    % Uchyb regulacji
-    e(k) = yzad(k) - y1(k);
-
-    % Prawo regulacji
-    du = Ke * e(k) - Ku * dup';
-    for n = D-1:-1:2
-        dup(n) = dup(n-1);
-    end
-
-    dup(1) = du;
-    u1(k) = u1(k-1) + dup(1);
-end
-
-u2 = zeros(1, kk);
-y2 = zeros(1, kk);
-e = zeros(1, kk);
-D = 69;
-N = 15;
-Nu = 3;
-s = step(G_z);
-s(1) = [];
-dup = zeros(1,D-1);
-
-% Macierz M
-M = zeros(N, Nu);
-for i = 1:N
-    for j = 1:Nu
-        if (i >= j)
-            M(i, j) = s(i-j+1);
-        end
-    end
-end
-
-% Macierz Mp
-Mp = zeros(N, D-1);
-for i = 1:N
-    for j = 1:(D-1)
-        if j + i <= D
-            Mp(i, j) = s(i+j) - s(j);
-        else
-            Mp(i, j) = s(D) - s(j);
-        end
-    end
-end
-
-I = eye(Nu);
-K = inv((M' * M + lambda * I)) * M';
-Ku = K(1,:) * Mp;
-Ke = sum(K(1,:));
-
-for k = 13:kk
-    % Symulacja obiektu
-    y2(k) = c(1) * u2(k-11) + c(2) * u2(k-12) - b(2) * y2(k-1) - b(3) * y2(k-2);
-
-    % Uchyb regulacji
-    e(k) = yzad(k) - y2(k);
-
-    % Prawo regulacji
-    du = Ke * e(k) - Ku * dup';
-    for n = D-1:-1:2
-        dup(n) = dup(n-1);
-    end
-
-    dup(1) = du;
-    u2(k) = u2(k-1) + dup(1);
-end
+% 
+% u1 = zeros(1, kk);
+% y1 = zeros(1, kk);
+% e = zeros(1, kk);
+% D = 69;
+% N = 15;
+% Nu = 2;
+% s = step(G_z);
+% s(1) = [];
+% dup = zeros(1,D-1);
+% 
+% % Macierz M
+% M = zeros(N, Nu);
+% for i = 1:N
+%     for j = 1:Nu
+%         if (i >= j)
+%             M(i, j) = s(i-j+1);
+%         end
+%     end
+% end
+% 
+% % Macierz Mp
+% Mp = zeros(N, D-1);
+% for i = 1:N
+%     for j = 1:(D-1)
+%         if j + i <= D
+%             Mp(i, j) = s(i+j) - s(j);
+%         else
+%             Mp(i, j) = s(D) - s(j);
+%         end
+%     end
+% end
+% 
+% I = eye(Nu);
+% K = inv((M' * M + lambda * I)) * M';
+% Ku = K(1,:) * Mp;
+% Ke = sum(K(1,:));
+% 
+% for k = 13:kk
+%     % Symulacja obiektu
+%     y1(k) = c(1) * u1(k-11) + c(2) * u1(k-12) - b(2) * y1(k-1) - b(3) * y1(k-2);
+% 
+%     % Uchyb regulacji
+%     e(k) = yzad(k) - y1(k);
+% 
+%     % Prawo regulacji
+%     du = Ke * e(k) - Ku * dup';
+%     for n = D-1:-1:2
+%         dup(n) = dup(n-1);
+%     end
+% 
+%     dup(1) = du;
+%     u1(k) = u1(k-1) + dup(1);
+% end
+% 
+% u2 = zeros(1, kk);
+% y2 = zeros(1, kk);
+% e = zeros(1, kk);
+% D = 69;
+% N = 15;
+% Nu = 3;
+% s = step(G_z);
+% s(1) = [];
+% dup = zeros(1,D-1);
+% 
+% % Macierz M
+% M = zeros(N, Nu);
+% for i = 1:N
+%     for j = 1:Nu
+%         if (i >= j)
+%             M(i, j) = s(i-j+1);
+%         end
+%     end
+% end
+% 
+% % Macierz Mp
+% Mp = zeros(N, D-1);
+% for i = 1:N
+%     for j = 1:(D-1)
+%         if j + i <= D
+%             Mp(i, j) = s(i+j) - s(j);
+%         else
+%             Mp(i, j) = s(D) - s(j);
+%         end
+%     end
+% end
+% 
+% I = eye(Nu);
+% K = inv((M' * M + lambda * I)) * M';
+% Ku = K(1,:) * Mp;
+% Ke = sum(K(1,:));
+% 
+% for k = 13:kk
+%     % Symulacja obiektu
+%     y2(k) = c(1) * u2(k-11) + c(2) * u2(k-12) - b(2) * y2(k-1) - b(3) * y2(k-2);
+% 
+%     % Uchyb regulacji
+%     e(k) = yzad(k) - y2(k);
+% 
+%     % Prawo regulacji
+%     du = Ke * e(k) - Ku * dup';
+%     for n = D-1:-1:2
+%         dup(n) = dup(n-1);
+%     end
+% 
+%     dup(1) = du;
+%     u2(k) = u2(k-1) + dup(1);
+% end
 
 % Wynik symulacji
 figure('Position', [100, 100, 600, 250]);
-stairs(u,'r');hold on; stairs(u1, 'b');stairs(u2, 'g');
+stairs(u,'r');
+% hold on; stairs(u1, 'b');stairs(u2, 'g');
 hold on; 
 grid on;
 xlabel('czas'); 
 ylabel('u');
 title('u');
 legend('Nu=1', 'Nu=2','Nu=3');
-print ('pics/DMC_u3vNu.png', '-dpng', '-r400')
+% print ('pics/DMC_u3vNu.png', '-dpng', '-r400')
 hold off; 
 
 figure('Position', [100, 100, 600, 250]);
-stairs(yzad, ':');hold on;stairs(y,'r'); hold on;stairs(y1,'b');stairs(y2, 'g');
+stairs(yzad, ':');hold on;stairs(y,'r'); 
+% hold on;stairs(y1,'b');stairs(y2, 'g');
 hold on; 
 grid on;
 xlabel('czas'); 
 ylabel('y, y_{zad}');
 title('y');
 legend('yzad','Nu=1', 'Nu=2','Nu=3');
-print ('pics/DMC_y3vNu.png', '-dpng', '-r400')
+xlim([1700 2000]);  
+% print ('pics/DMC_y3vNu.png', '-dpng', '-r400')
 
